@@ -7,7 +7,7 @@ def get_range_for_difficulty(difficulty: str):
     if difficulty == "Normal":
         return 1, 100
     if difficulty == "Hard":
-        return 1, 200
+        return 1, 50
     return 1, 100
 
 
@@ -35,16 +35,16 @@ def check_guess(guess, secret):
 
     try:
         if guess > secret:
-            return "Too High", "📉 Go LOWER!"
+            return "Too High", "📈 Go HIGHER!"
         else:
-            return "Too Low", "📈 Go HIGHER!"
+            return "Too Low", "📉 Go LOWER!"
     except TypeError:
         g = str(guess)
         if g == secret:
             return "Win", "🎉 Correct!"
         if g > secret:
-            return "Too High", "📉 Go LOWER!"
-        return "Too Low", "📈 Go HIGHER!"
+            return "Too High", "📈 Go HIGHER!"
+        return "Too Low", "📉 Go LOWER!"
 
 
 def update_score(current_score: int, outcome: str, attempt_number: int):
@@ -107,7 +107,7 @@ if "history" not in st.session_state:
 st.subheader("Make a guess")
 
 st.info(
-    f"Guess a number between {low} and {high}. "
+    f"Guess a number between 1 and 100. "
     f"Attempts left: {attempt_limit - st.session_state.attempts}"
 )
 
@@ -155,7 +155,10 @@ if submit:
     else:
         st.session_state.history.append(guess_int)
 
-        secret = st.session_state.secret
+        if st.session_state.attempts % 2 == 0:
+            secret = str(st.session_state.secret)
+        else:
+            secret = st.session_state.secret
 
         outcome, message = check_guess(guess_int, secret)
 
