@@ -1,0 +1,63 @@
+flowchart TD
+    DEV["👤 Developer / Student
+    Writes test cases
+    Reviews results
+    Fixes bugs
+    Plays game manually"]
+
+    subgraph INPUT["Input Layer"]
+        PI["Player Input
+        - Selects difficulty
+        - Types guess
+        - Clicks Submit"]
+        TD["Test Data
+        eval_harness.py
+        36 predefined cases"]
+    end
+
+    subgraph APP["app.py — Streamlit UI"]
+        SS["Session State
+        secret, attempts, score"]
+    end
+
+    subgraph EVAL["eval_harness.py — Test Runner"]
+        RUN["Runs each case
+        Compares actual vs expected
+        Calculates confidence %"]
+    end
+
+    subgraph LOGIC["logic_utils.py — Logic Layer"]
+        GR["get_range_for_difficulty()
+        Easy 1–5 | Normal 1–100 | Hard 1–1000"]
+        PG["parse_guess()
+        raw string → int or error"]
+        CG["check_guess()
+        Win / Too High / Too Low"]
+        US["update_score()
+        apply points or penalty"]
+    end
+
+    subgraph OUTPUT["Output Layer"]
+        UI["Streamlit UI
+        Hint, score, win/loss banner"]
+        ER["Eval Report (terminal)
+        PASS/FAIL per case
+        Confidence % per group
+        Exit code 0 or 1"]
+    end
+
+    HV["👤 Human Verification
+    Read report → trace bug
+    Fix logic_utils.py
+    Re-run → confirm 100%"]
+
+    DEV -->|writes & runs| INPUT
+    PI --> APP
+    TD --> EVAL
+    APP --> LOGIC
+    EVAL --> LOGIC
+    LOGIC --> GR & PG & CG & US
+    GR & PG & CG & US --> OUTPUT
+    UI -->|player sees result| DEV
+    ER --> HV
+    HV -->|fix & re-run| LOGIC

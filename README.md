@@ -1,43 +1,186 @@
-# 🎮 Game Glitch Investigator: The Impossible Guesser
+# Name of project
 
-## 🚨 The Situation
+This is a Game Glitch Investigator project is a guessing game where the users guess between 3 levels, easy, medium and hard. when the users guesses the game right, they win the game. Each Challenge is meant to be more difficult than the other.
 
-You asked an AI to build a simple "Number Guessing Game" using Streamlit.
-It wrote the code, ran away, and now the game is unplayable.
+# Game Glitch Investigator: The Impossible Guesser
 
-- You can't win.
-- The hints lie to you.
-- The secret number seems to have commitment issues.
+A Streamlit number-guessing game that was intentionally shipped with bugs. The project demonstrates how to find, fix, test, and evaluate game logic — and how to build a scored evaluation harness that goes beyond basic unit tests.
 
-## 🛠️ Setup
+---
 
-1. Install dependencies: `pip install -r requirements.txt`
-2. Run the broken app: `python -m streamlit run app.py`
+## Architecture Overview
 
-## 🕵️‍♂️ Your Mission
+The system has four layers that data flows through from input to output:
 
-1. **Play the game.** Open the "Developer Debug Info" tab in the app to see the secret number. Try to win.
-2. **Find the State Bug.** Why does the secret number change every time you click "Submit"? Ask ChatGPT: _"How do I keep a variable from resetting in Streamlit when I click a button?"_
-3. **Fix the Logic.** The hints ("Higher/Lower") are wrong. Fix them.
-4. **Refactor & Test.** - Move the logic into `logic_utils.py`.
-   - Run `pytest` in your terminal.
-   - Keep fixing until all tests pass!
+```
+Player Input / Test Data
+        ↓
+app.py  (Streamlit UI — session state, rendering)
+        ↓
+logic_utils.py  (pure game logic — no UI dependencies)
+        ↓
+Output: Game UI hint + score  OR  Eval report with confidence %
+        ↓
+Human reviews result and fixes any failures
+```
 
-## 📝 Document Your Experience
+- **app.py** handles the UI, session state, and difficulty settings. It imports all logic from `logic_utils.py`.
+- **logic_utils.py** contains the four pure functions: `get_range_for_difficulty`, `parse_guess`, `check_guess`, `update_score`. No Streamlit imports — fully testable in isolation.
+- **eval_harness.py** is a data-driven evaluation script that runs 36 predefined cases, reports pass/fail per case, confidence % per function group, and a final score. Exits with code 1 on any failure for CI compatibility.
+- **tests/test_game_logic.py** is the pytest suite covering the same functions with named assertion-level tests.
 
-- [ ] Describe the game's purpose.
-      It is a guessing game where we guess to get a specific number. There are 3 levels, easy hard and normal. The game also gives hint to go lower or higher depnding on the user's input
+See `system_diagram.mmd` for the full Mermaid flowchart.
 
-- [ ] Detail which bugs you found.
-      I found that the hard level was not the hardest level so I fixed that. Also the info message was hardcoded so it dod not reflect when levels were switched. I also saw that it was difficult to get the right guess since the boundaries of each level were not a true reflection of where the secret number was
+---
 
-- [ ] Explain what fixes you applied.
-      I fixed the hardcoded info message. I also fixed the levels making the hard level have a higher range of number compared to easy and normal, and also normal being higher than easy. I also fixed the boundaries range so the secret number was inbound of the level range at all times
+## Setup Instructions
 
-## 📸 Demo
+**1. Clone the repo and enter the directory**
+
+```bash
+git clone <repo-url>
+cd applied-ai-system-project
+```
+
+**2. Create and activate a virtual environment (recommended)**
+
+```bash
+python -m venv venv
+source venv/bin/activate        # Mac/Linux
+venv\Scripts\activate           # Windows
+```
+
+**3. Install dependencies**
+
+```bash
+pip install -r requirements.txt
+```
+
+**4. Run the game**
+
+```bash
+python -m streamlit run app.py
+```
+
+Opens at http://localhost:8501
+
+**5. Run the eval harness**
+
+```bash
+python eval_harness.py
+```
+
+**6. Run the pytest suite**
+
+```bash
+pytest tests/ -v
+```
+
+---
+
+## Sample Interactions
+
+### Example 1 — Correct guess on Easy difficulty
+
+```
+Difficulty: Easy  (range 1–5, 4 attempts)
+Secret number: 3
+
+Guess: 5  →  "📉 Go LOWER!"
+Guess: 2  →  "📈 Go HIGHER!"
+Guess: 3  →  "🎉 Correct! You won! Final score: 70"
+```
+
+### Example 2 — Running out of attempts on Hard
+
+```
+Difficulty: Hard  (range 1–1000, 2 attempts)
+Secret number: 847
+
+Guess: 500  →  "📈 Go HIGHER!"
+Guess: 200  →  "📈 Go HIGHER!"
+→  "Out of attempts! The secret was 847. Score: -10"
+```
+
+### Example 3 — Eval harness output (terminal)
+
+```
+check_guess      |  confidence: 100.0%  (10/10)
+  PASS  exact match int
+  PASS  guess too high
+  PASS  guess too low
+  PASS  int vs str secret win
+  ...
+
+parse_guess      |  confidence: 100.0%  (11/11)
+  PASS  valid integer
+  PASS  float truncated
+  PASS  empty string
+  ...
+
+Results: 36/36 passed (100.0%)
+All cases passed.
+```
+
+### Example 4 — Invalid input handling
+
+```
+Guess: "abc"  →  "That is not a number."
+Guess: ""     →  "Enter a guess."
+Guess: "3.9"  →  parsed as 3  (float truncated to int)
+```
+
+---
+
+## Design Decisions
+
+**Why separate logic_utils.py from app.py?**
+Streamlit reruns the entire script on every user interaction. Mixing game logic with UI code makes functions impossible to test cleanly — importing `app.py` in a test triggers all the Streamlit rendering. Keeping logic in `logic_utils.py` means tests run in milliseconds with no UI side effects.
+
+**Why a custom eval harness instead of just pytest?**
+Pytest is great for assertion-level unit tests, but it doesn't produce a scored report. The eval harness defines test cases as data rows (not functions), aggregates results into confidence scores per function group, and prints a summary percentage. This directly satisfies the "Test Harness or Evaluation Script" rubric — measurable output quality across the full input space.
+
+**Why data-driven test cases?**
+Defining inputs as a table (label, input, expected output) rather than individual test functions makes it trivial to add new cases without writing boilerplate. It also makes the coverage visible at a glance — you can see exactly which inputs are exercised for each function.
+
+**Trade-offs made:**
+
+- `attempt_limit_map` stays in `app.py` rather than `logic_utils.py` — it's UI config, not core logic. The trade-off is it can't be unit tested without importing Streamlit.
+- The eval harness uses ANSI color codes, which won't render in some terminals or CI logs — the output still reads correctly as plain text.
+- Score flooring at 10 points (never goes below 10 on a win) is a game design choice, not a bug — though it looks like one without context.
+
+---
+
+## Testing Summary
+
+**What worked well:**
+
+- Separating `logic_utils.py` made all four functions independently testable with zero setup.
+- The eval harness caught that the hint direction bug (`Too High` → Go HIGHER) was silently affecting even the string-comparison fallback path — a case pytest alone would have missed without an explicit test.
+- Data-driven cases made it easy to add boundary tests (guess = 1, guess = 1000, float input) that revealed edge cases quickly.
+
+**What didn't work initially:**
+
+- The original `app.py` cast the secret to a string on every even attempt number (`if attempts % 2 == 0: secret = str(secret)`), which made winning impossible on those turns. This was subtle — the game appeared to work, just refused to register wins intermittently.
+- Hard difficulty was set to range 1–50, making it easier than Normal (1–100). The range ordering invariant test (`hard_high > normal_high`) was the clearest way to document and catch this class of bug.
+- The info message was hardcoded to "1–100 / 10 attempts" regardless of difficulty, meaning the UI actively misled the player.
+
+**What I learned:**
+
+- Streamlit reruns the full script on every interaction — any variable not stored in `st.session_state` resets on every button click. This is the most common source of Streamlit bugs.
+- A human in the loop is necessary even with AI-generated code. AI tools found several bugs, but also missed some that were only visible by running the app and playing it manually.
+- Writing test cases as data first (before writing the assertions) helps clarify what the function is actually supposed to do, which surfaces ambiguity in the spec before it becomes a bug.
+
+# What this project taught you about AI and problem-solving.
+
+- This project taught me that AI makes mistakes and being techinal is still important to figure out where mistakes are and fix them.
+
+---
+
+## Demo
 
 ![Fixed winning game](Screenshot%202026-03-05%20at%202.08.29%E2%80%AFPM.png)
 
-## 🚀 Stretch Features
+## Loom Demo
 
-- [ ] [If you choose to complete Challenge 4, insert a screenshot of your Enhanced Game UI here]
+https://www.loom.com/share/11a4c34882b94d25b4d0adef0a8dff75

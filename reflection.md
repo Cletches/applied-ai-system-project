@@ -65,3 +65,19 @@ Answer each question in 3 to 5 sentences. Be specific and honest about what actu
 
 Challenge 5: AI Model Comparison:
 I realized all the models wrote code fixes for me without they seeing the original code, which can cause issues. Comparing the responses, only one model's fix fit directly into my code however, I still need to be cautious since the model guessed a right response without seeing the original code
+
+## 6. What are the limitations or biases in your system?
+
+Test cases are predefined and work. Maybe additional test cases could help improve it
+
+## 7. Could your AI be misused, and how would you prevent that?
+
+Yes. The model can say there are no bugs but when I tested some features I found some bugs. So it is always better to manually test the product to prevent unexpected issues.
+
+## 8. What surprised you while testing your AI's reliability?
+
+It wrote good test cases that I could not think of at the moment but missed some few test cases as well. So it is important to always think about the problem and not let the model do all the thinking
+
+## 9. describe your collaboration with AI during this project. Identify one instance when the AI gave a helpful suggestion and one instance where its suggestion was flawed or incorrect.
+
+As previously stated, it was good in debugging and writing test cases. Where the flaw was is when it missed basic test cases. I manually tested them and realised there were still some issues. It if very important to test the product and features always.
